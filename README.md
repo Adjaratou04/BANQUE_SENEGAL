@@ -28,7 +28,7 @@ L'objectif final est de fournir un **outil interactif permettant d'analyser la p
 
 ---
 
-## 🏗 Architecture
+##  Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -169,7 +169,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 4️4- Scraper les rapports BCEAO
+### 4- Scraper les rapports BCEAO
 
 ```bash
 python scraping/bceao_scraper.py
