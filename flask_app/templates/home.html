@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plateforme d'Analyse Sectorielle — Sénégal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        html, body {
+            height: 100%;
+            background: #080B12;
+            color: #E8DCC8;
+            font-family: 'DM Sans', sans-serif;
+            overflow-x: hidden;
+        }
+
+        /* Fond lumineux */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 70% 40% at 50% 0%, rgba(195,155,72,0.10) 0%, transparent 60%),
+                radial-gradient(ellipse 40% 30% at 90% 80%, rgba(195,155,72,0.05) 0%, transparent 55%),
+                radial-gradient(ellipse 30% 20% at 10% 60%, rgba(195,155,72,0.03) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Grille de fond subtile */
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(195,155,72,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(195,155,72,0.03) 1px, transparent 1px);
+            background-size: 60px 60px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 60px 24px;
+        }
+
+        /* Badge */
+        .badge {
+            display: inline-block;
+            background: rgba(195,155,72,0.08);
+            border: 1px solid rgba(195,155,72,0.28);
+            border-radius: 50px;
+            padding: 5px 20px;
+            font-size: 0.68rem;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            color: #C39B48;
+            margin-bottom: 28px;
+            animation: fadeDown 0.6s ease forwards;
+        }
+
+        /* Titre */
+        .hero-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: clamp(2rem, 5vw, 3.8rem);
+            font-weight: 300;
+            color: #E8DCC8;
+            letter-spacing: 0.04em;
+            line-height: 1.15;
+            text-align: center;
+            margin-bottom: 10px;
+            animation: fadeDown 0.7s ease 0.1s both;
+        }
+
+        .hero-title span {
+            color: #C39B48;
+            font-style: italic;
+            font-weight: 600;
+        }
+
+        .hero-sub {
+            font-size: 0.90rem;
+            color: #8A8070;
+            text-align: center;
+            max-width: 520px;
+            line-height: 1.65;
+            margin-bottom: 20px;
+            animation: fadeDown 0.7s ease 0.15s both;
+        }
+
+        /* Séparateur */
+        .sep {
+            width: 200px;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(195,155,72,0.55), transparent);
+            margin: 0 auto 52px;
+            animation: fadeDown 0.7s ease 0.2s both;
+        }
+
+        /* Grille secteurs */
+        .sectors-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 22px;
+            width: 100%;
+            max-width: 900px;
+            animation: fadeUp 0.7s ease 0.3s both;
+        }
+
+        @media (max-width: 680px) {
+            .sectors-grid { grid-template-columns: 1fr; }
+        }
+
+        /* Carte secteur */
+        .sector-card {
+            background: linear-gradient(145deg, #0D1018, #111620);
+            border: 1px solid rgba(195,155,72,0.18);
+            border-radius: 20px;
+            padding: 36px 28px;
+            text-decoration: none;
+            color: inherit;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 14px;
+            position: relative;
+            overflow: hidden;
+            transition: border-color 0.3s ease, transform 0.25s ease;
+        }
+
+        .sector-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            width: 55px; height: 55px;
+            border-top: 1px solid rgba(195,155,72,0.4);
+            border-left: 1px solid rgba(195,155,72,0.4);
+            border-radius: 20px 0 0 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .sector-card:hover {
+            border-color: rgba(195,155,72,0.55);
+            transform: translateY(-4px);
+        }
+
+        .sector-card.disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        .sector-icon {
+            width: 48px; height: 48px;
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.4rem;
+            flex-shrink: 0;
+        }
+
+        .sector-icon.gold   { background: rgba(195,155,72,0.12); border: 1px solid rgba(195,155,72,0.3); }
+        .sector-icon.blue   { background: rgba(79,195,247,0.10); border: 1px solid rgba(79,195,247,0.25); }
+        .sector-icon.green  { background: rgba(129,199,132,0.10); border: 1px solid rgba(129,199,132,0.25); }
+
+        .sector-name {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #E8DCC8;
+            letter-spacing: 0.03em;
+        }
+
+        .sector-desc {
+            font-size: 0.80rem;
+            color: #8A8070;
+            line-height: 1.6;
+            flex: 1;
+        }
+
+        .sector-status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 50px;
+            font-size: 0.68rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .status-active {
+            background: rgba(195,155,72,0.12);
+            border: 1px solid rgba(195,155,72,0.35);
+            color: #C39B48;
+        }
+
+        .status-soon {
+            background: rgba(138,128,112,0.10);
+            border: 1px solid rgba(138,128,112,0.25);
+            color: #8A8070;
+        }
+
+        .sector-arrow {
+            position: absolute;
+            bottom: 24px; right: 24px;
+            color: #C39B48;
+            font-size: 1.1rem;
+            opacity: 0;
+            transform: translateX(-6px);
+            transition: opacity 0.25s, transform 0.25s;
+        }
+
+        .sector-card:not(.disabled):hover .sector-arrow {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        /* Stats bar */
+        .stats-bar {
+            display: flex;
+            gap: 40px;
+            margin-top: 60px;
+            padding-top: 36px;
+            border-top: 1px solid rgba(195,155,72,0.12);
+            animation: fadeUp 0.7s ease 0.45s both;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: #E8C96A;
+            display: block;
+        }
+
+        .stat-label {
+            font-size: 0.72rem;
+            color: #8A8070;
+            text-transform: uppercase;
+            letter-spacing: 0.10em;
+        }
+
+        /* Footer */
+        .footer {
+            margin-top: 52px;
+            text-align: center;
+            font-size: 0.72rem;
+            color: #3A3025;
+            letter-spacing: 0.07em;
+            animation: fadeUp 0.7s ease 0.5s both;
+        }
+
+        /* Animations */
+        @keyframes fadeDown {
+            from { opacity: 0; transform: translateY(-16px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(16px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: #0D1018; }
+        ::-webkit-scrollbar-thumb { background: #C39B48; border-radius: 2px; }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <div class="badge">Plateforme d'Analyse &nbsp;·&nbsp; Sénégal &nbsp;·&nbsp; BCEAO</div>
+
+    <h1 class="hero-title">
+        Analyse des<br><span>Secteurs Économiques</span>
+    </h1>
+
+    <p class="hero-sub">
+        Visualisation interactive des données financières et sectorielles du Sénégal.
+        Choisissez un secteur pour explorer les indicateurs de performance.
+    </p>
+
+    <div class="sep"></div>
+
+    <div class="sectors-grid">
+
+        <!-- Secteur Bancaire -->
+        <a href="/banques/" class="sector-card">
+            <div class="sector-icon gold">🏦</div>
+            <div class="sector-name">Secteur Bancaire</div>
+            <p class="sector-desc">
+                Analyse du positionnement des banques au Sénégal — bilan, résultat net,
+                fonds propres, ratios financiers et parts de marché.
+            </p>
+            <span class="sector-status status-active">Disponible</span>
+            <span class="sector-arrow">→</span>
+        </a>
+
+        <!-- Secteur Énergétique -->
+        <div class="sector-card disabled">
+            <div class="sector-icon blue">⚡</div>
+            <div class="sector-name">Secteur Énergétique</div>
+            <p class="sector-desc">
+                Production, distribution et consommation d'énergie au Sénégal —
+                indicateurs de performance des acteurs du secteur.
+            </p>
+            <span class="sector-status status-soon">À venir</span>
+        </div>
+
+        <!-- Secteur Assurance -->
+        <div class="sector-card disabled">
+            <div class="sector-icon green">🛡</div>
+            <div class="sector-name">Secteur Assurance</div>
+            <p class="sector-desc">
+                Primes collectées, sinistres, provisions techniques et solidité
+                financière des compagnies d'assurance.
+            </p>
+            <span class="sector-status status-soon">À venir</span>
+        </div>
+
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-bar">
+        <div class="stat-item">
+            <span class="stat-value">20+</span>
+            <span class="stat-label">Banques analysées</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-value">BCEAO</span>
+            <span class="stat-label">Source officielle</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-value">14</span>
+            <span class="stat-label">Indicateurs clés</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-value">3</span>
+            <span class="stat-label">Secteurs couverts</span>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>Plateforme d'Analyse Sectorielle &nbsp;·&nbsp; Données BCEAO &nbsp;·&nbsp; Sénégal</p>
+    </div>
+
+</div>
+</body>
+</html>

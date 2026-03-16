@@ -1,0 +1,87 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap');
+
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html {
+    background: #080B12 !important;
+    min-height: 100%;
+}
+
+body {
+    background: #080B12 !important;
+    color: #E8DCC8;
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* Conteneurs racine Dash — forcer le fond noir */
+#react-entry-point,
+#_dash-app-content,
+.dash-loading,
+._dash-loading {
+    background: #080B12 !important;
+    min-height: 100vh;
+}
+
+/* Fond lumineux */
+body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+        radial-gradient(ellipse 80% 40% at 50% -5%, rgba(195,155,72,0.07) 0%, transparent 65%),
+        radial-gradient(ellipse 40% 30% at 95% 85%, rgba(195,155,72,0.04) 0%, transparent 55%);
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: #0D1018; }
+::-webkit-scrollbar-thumb { background: #C39B48; border-radius: 2px; }
+
+/* Dropdown Dash */
+.Select-control {
+    background: #0D1018 !important;
+    border: 1px solid rgba(195,155,72,0.3) !important;
+    border-radius: 10px !important;
+    color: #E8DCC8 !important;
+    min-height: 44px !important;
+}
+.Select-value-label { color: #E8DCC8 !important; }
+.Select-placeholder { color: #8A8070 !important; }
+.Select-menu-outer {
+    background: #0D1018 !important;
+    border: 1px solid rgba(195,155,72,0.3) !important;
+    border-radius: 10px !important;
+    z-index: 9999 !important;
+}
+.VirtualizedSelectOption { color: #E8DCC8 !important; background: #0D1018 !important; }
+.VirtualizedSelectFocusedOption { background: rgba(195,155,72,0.12) !important; }
+.Select-arrow { border-color: #C39B48 transparent transparent !important; }
+
+/* Plotly modebar */
+.js-plotly-plot .plotly .modebar { background: transparent !important; }
+.js-plotly-plot .plotly .modebar-btn path { fill: rgba(195,155,72,0.5) !important; }
+.js-plotly-plot .plotly .modebar-btn:hover path { fill: #C39B48 !important; }
+
+/* Animations */
+@keyframes fadeUp {
+    from { opacity: 0; transform: translateY(18px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+.fade-up { animation: fadeUp 0.55s ease forwards; }
+
+@keyframes goldPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(195,155,72,0); }
+    50%       { box-shadow: 0 0 18px 2px rgba(195,155,72,0.10); }
+}
+.kpi-pulse { animation: goldPulse 3s ease-in-out infinite; }
+
+button { cursor: pointer; font-family: 'DM Sans', sans-serif; }
