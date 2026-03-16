@@ -6,7 +6,7 @@ load_dotenv()
 
 def get_database():
     uri = os.getenv("MONGO_URI", "mongodb://localhost:27017")
-    db_name = os.getenv("MONGO_DB_NAME", "Baqnues_senegal")
+    # Nom exact de la base de données dans MongoDB Atlas
     client = MongoClient(uri)
-    db = client[db_name]
+    db = client["Baqnues_senegal"]
     return db
