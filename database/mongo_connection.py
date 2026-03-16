@@ -1,9 +1,12 @@
 from pymongo import MongoClient
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 def get_database():
-
-    client = MongoClient("mongodb://localhost:27017")
-
-    db = client["banques_senegal"]
-
+    uri = os.getenv("MONGO_URI", "mongodb://localhost:27017")
+    db_name = os.getenv("MONGO_DB_NAME", "banque_senegal")
+    client = MongoClient(uri)
+    db = client[db_name]
     return db
