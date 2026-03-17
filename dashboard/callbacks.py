@@ -101,13 +101,18 @@ def get_bank_coords(sigle):
 
 def get_data():
     """
-    Récupère toutes les données bancaires depuis MongoDB Atlas.
-    Base de données : Baqnues_senegal
-    Collection      : banque  ⚠️ (sans 's' — nom exact dans Atlas)
-    Retourne un DataFrame pandas.
+    Récupère toutes les données bancaires depuis MongoDB.
+    - En local      : base 'banques_senegal', collection 'banques'
+    - Sur Render    : base définie par MONGO_DB_NAME, collection par MONGO_COLLECTION
+    Le nom de la collection est lu depuis la variable d'environnement MONGO_COLLECTION.
+    Valeur par défaut : 'banques' (pour le local).
     """
     db = get_database()
-    collection = db["banque"]  # ⚠️ Nom exact de la collection dans MongoDB Atlas
+    # ⚠️ Nom de collection configurable via variable d'environnement
+    # Local  : MONGO_COLLECTION=banques  (valeur par défaut)
+    # Render : MONGO_COLLECTION=banque
+    collection_name = os.getenv("MONGO_COLLECTION", "banques")
+    collection = db[collection_name]
     data = list(collection.find())
     df = pd.DataFrame(data)
     return df
@@ -406,7 +411,6 @@ def register_callbacks(app):
 
     # ─────────────────────────────────────────────────────
     # CALLBACK 3 — Mise à jour du dashboard complet (44 sorties)
-    # Déclenché à chaque changement de filtre Année ou Banque
     # ─────────────────────────────────────────────────────
     @app.callback(
         Output("bilan-chart","figure"),          # 1  — Bilan
@@ -427,32 +431,32 @@ def register_callbacks(app):
         Output("kpi-resultat","children"),        # 16 — KPI Résultat
         Output("kpi-fonds","children"),           # 17 — KPI Fonds propres
         Output("kpi-pnb","children"),             # 18 — KPI PNB
-        Output("analysis-text","children"),       # 19 — Analyse secteur (KPI)
-        Output("bank-analysis","children"),       # 20 — Analyse banque (KPI)
-        Output("interp-bilan","children"),        # 21 — Interp. bilan
-        Output("interp-resultat","children"),     # 22 — Interp. résultat
-        Output("interp-evolution","children"),    # 23 — Interp. évolution
-        Output("interp-ranking","children"),      # 24 — Interp. classement
-        Output("interp-score","children"),        # 25 — Interp. score
-        Output("interp-roa","children"),          # 26 — Interp. ROA
-        Output("interp-solvency","children"),     # 27 — Interp. solvabilité
-        Output("interp-emploi","children"),       # 28 — Interp. emplois
-        Output("interp-ressources","children"),   # 29 — Interp. ressources
-        Output("interp-positioning","children"),  # 30 — Interp. positionnement
-        Output("interp-matrix","children"),       # 31 — Interp. matrice
-        Output("interp-marketshare","children"),  # 32 — Interp. parts de marché
-        Output("interp-map","children"),          # 33 — Interp. carte
-        Output("interp-prediction","children"),   # 34 — Interp. prévision
-        Output("analysis-text-2","children"),     # 35 — Analyse secteur (Synthèse)
-        Output("bank-analysis-2","children"),     # 36 — Analyse banque (Synthèse)
-        Output("comp-chart-bilan-resultat","figure"),    # 37 — Comp. bilan/résultat
-        Output("comp-chart-roa-solvency","figure"),      # 38 — Comp. ROA/solvabilité
-        Output("comp-chart-emploi-ressources","figure"), # 39 — Comp. emplois/ressources
-        Output("comp-chart-score-bilan","figure"),       # 40 — Comp. score/bilan
-        Output("interp-comp-bilan","children"),   # 41 — Interp. comp. bilan
-        Output("interp-comp-roa","children"),     # 42 — Interp. comp. ROA
-        Output("interp-comp-emploi","children"),  # 43 — Interp. comp. emplois
-        Output("interp-comp-score","children"),   # 44 — Interp. comp. score
+        Output("analysis-text","children"),       # 19 — Analyse secteur
+        Output("bank-analysis","children"),       # 20 — Analyse banque
+        Output("interp-bilan","children"),        # 21
+        Output("interp-resultat","children"),     # 22
+        Output("interp-evolution","children"),    # 23
+        Output("interp-ranking","children"),      # 24
+        Output("interp-score","children"),        # 25
+        Output("interp-roa","children"),          # 26
+        Output("interp-solvency","children"),     # 27
+        Output("interp-emploi","children"),       # 28
+        Output("interp-ressources","children"),   # 29
+        Output("interp-positioning","children"),  # 30
+        Output("interp-matrix","children"),       # 31
+        Output("interp-marketshare","children"),  # 32
+        Output("interp-map","children"),          # 33
+        Output("interp-prediction","children"),   # 34
+        Output("analysis-text-2","children"),     # 35
+        Output("bank-analysis-2","children"),     # 36
+        Output("comp-chart-bilan-resultat","figure"),    # 37
+        Output("comp-chart-roa-solvency","figure"),      # 38
+        Output("comp-chart-emploi-ressources","figure"), # 39
+        Output("comp-chart-score-bilan","figure"),       # 40
+        Output("interp-comp-bilan","children"),   # 41
+        Output("interp-comp-roa","children"),     # 42
+        Output("interp-comp-emploi","children"),  # 43
+        Output("interp-comp-score","children"),   # 44
         Input("year-filter","value"),
         Input("bank-filter","value")
     )
@@ -499,10 +503,7 @@ def register_callbacks(app):
             return d
 
         def bar(col, title, sort=False):
-            """
-            Crée un bar chart coloré par banque.
-            Retourne empty_fig() si les données sont absentes ou vides.
-            """
+            """Crée un bar chart coloré par banque."""
             if df_year.empty or col not in df_year.columns:
                 return empty_fig()
             src = df_year.sort_values(col, ascending=False) if sort else df_year
@@ -528,7 +529,7 @@ def register_callbacks(app):
                                    annotation_text="Norme BCEAO 8%",
                                    annotation_font_color="#C39B48", annotation_font_size=11)
 
-        # ── Évolution temporelle (courbes multi-banques) ──
+        # ── Évolution temporelle ──────────────────────────
         if df.empty:
             fig_evolution = empty_fig()
         else:
@@ -538,7 +539,7 @@ def register_callbacks(app):
             fig_evolution.update_layout(**bl())
             fig_evolution.update_traces(line_width=2.5, marker_size=7)
 
-        # ── Positionnement stratégique (scatter) ─────────
+        # ── Positionnement stratégique ────────────────────
         if df_year.empty or df_year["ROA"].isna().all():
             fig_position = empty_fig()
         else:
@@ -551,7 +552,7 @@ def register_callbacks(app):
                                        marker=dict(line=dict(color="#080B12", width=1.5)))
             fig_position.update_layout(showlegend=False, **bl())
 
-        # ── Carte géographique (OpenStreetMap) ───────────
+        # ── Carte géographique ────────────────────────────
         if df_year.empty:
             fig_map = empty_fig()
         else:
@@ -567,7 +568,7 @@ def register_callbacks(app):
                                   font=dict(color="#333333"),
                                   margin=dict(l=0,r=0,t=30,b=0), height=500)
 
-        # ── Parts de marché (donut chart) ─────────────────
+        # ── Parts de marché ───────────────────────────────
         if df_year.empty:
             fig_market = empty_fig()
         else:
@@ -579,7 +580,7 @@ def register_callbacks(app):
             fig_market.update_layout(paper_bgcolor="rgba(0,0,0,0)",
                                      font=dict(color="#E8DCC8"))
 
-        # ── Matrice stratégique (scatter avec légende) ────
+        # ── Matrice stratégique ───────────────────────────
         if df_year.empty or df_year["ROA"].isna().all():
             fig_matrix = empty_fig()
         else:
@@ -601,14 +602,13 @@ def register_callbacks(app):
             mdl = LinearRegression().fit(dp["ANNEE"].values.reshape(-1,1), dp["BILAN"].values)
             am  = dp["ANNEE"].max()
             fut = np.arange(am+1, am+4).reshape(-1,1)
-            # Concaténation historique + projections futures
             dt  = pd.concat([dp, pd.DataFrame({"ANNEE":fut.flatten(),"BILAN":mdl.predict(fut)})])
             fig_prediction = px.line(dt, x="ANNEE", y="BILAN",
                                      title="Prévision du bilan sectoriel (3 ans)")
             fig_prediction.update_layout(**bl())
             fig_prediction.update_traces(line_color="#C39B48", line_width=2.5)
 
-        # ── Analyses textuelles automatiques ─────────────
+        # ── Analyses textuelles ───────────────────────────
         if df_year.empty:
             analysis = "Aucune donnée disponible."
             bank_analysis = ""
@@ -624,7 +624,6 @@ def register_callbacks(app):
                         f"· PNB agrégé              : {fmt(pnb_total)}\n")
             bank_analysis = ""
             if bank:
-                # Analyse individuelle si une banque est sélectionnée
                 r = df_year.iloc[0]
                 b = r["BILAN"]; res = r["RESULTAT.NET"]; fp = r["FONDS.PROPRE"]
                 bank_analysis = (f"Analyse détaillée — {bank} :\n\n"
@@ -634,15 +633,13 @@ def register_callbacks(app):
                                  f"· ROA           : {pct(res/b if b else 0)}\n"
                                  f"· Solvabilité   : {pct(fp/b if b else 0)}\n")
 
-        # ── Graphiques onglet Comparaison ─────────────────
+        # ── Graphiques Comparaison ────────────────────────
         # ⚠️ xaxis/yaxis retirés de CL pour éviter "multiple values for keyword argument"
         CL = dict(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="#080B12",
                   font=dict(family="DM Sans", color="#E8DCC8", size=11),
                   legend=dict(bgcolor="rgba(13,16,24,0.85)", bordercolor="#C39B48",
                               borderwidth=0.5, font=dict(color="#E8DCC8", size=10)),
                   margin=dict(l=20,r=20,t=50,b=60), barmode="group", height=420)
-
-        # Props d'axes réutilisables (fusionnés avec {**_ax, ...} dans chaque figure)
         _ax = dict(gridcolor="rgba(255,255,255,0.06)",
                    tickfont=dict(color="#8A8070", size=10), automargin=True)
 
@@ -667,7 +664,7 @@ def register_callbacks(app):
                                           tickfont=dict(color="#8A8070",size=10),
                                           gridcolor="rgba(0,0,0,0)"))
 
-            # Comp2 : ROA vs Solvabilité — avec ligne norme BCEAO
+            # Comp2 : ROA vs Solvabilité
             dr = dc.sort_values("ROA", ascending=False)
             fc2 = go.Figure()
             fc2.add_trace(go.Bar(name="ROA", x=dr["Sigle"], y=dr["ROA"],
@@ -700,7 +697,6 @@ def register_callbacks(app):
             bm = safe_max(ds["BILAN"])
             fc4 = go.Figure()
             for _, row in ds.iterrows():
-                # Taille de bulle proportionnelle au bilan (min 14, max 50)
                 fc4.add_trace(go.Scatter(
                     x=[row["Score"]], y=[row["BILAN"]],
                     mode="markers+text", name=row["Sigle"],
@@ -722,7 +718,7 @@ def register_callbacks(app):
                                          tickfont=dict(color="#8A8070",size=10),
                                          title_font=dict(color="#C39B48"), automargin=True))
 
-        # ── Retour des 44 valeurs dans l'ordre exact des Output ──
+        # ── Retour des 44 valeurs ─────────────────────────
         return (
             fig_bilan, fig_resultat, fig_evolution, fig_ratio,          # 1-4
             fig_ranking, fig_position, fig_score, fig_map,              # 5-8
@@ -747,15 +743,14 @@ def register_callbacks(app):
             interpret_prediction(df),                                   # 34
             analysis, bank_analysis,                                    # 35-36
             fc1, fc2, fc3, fc4,                                         # 37-40
-            interpret_bilan(df_year),                                   # 41 interp-comp-bilan
-            interpret_roa(df_year),                                     # 42 interp-comp-roa
-            interpret_emploi(df_year),                                  # 43 interp-comp-emploi
-            interpret_score(df_year),                                   # 44 interp-comp-score
+            interpret_bilan(df_year),                                   # 41
+            interpret_roa(df_year),                                     # 42
+            interpret_emploi(df_year),                                  # 43
+            interpret_score(df_year),                                   # 44
         )
 
     # ─────────────────────────────────────────────────────
     # CALLBACK 4 — Export Excel
-    # Télécharge toutes les données en fichier .xlsx
     # ─────────────────────────────────────────────────────
     @app.callback(
         Output("download-excel","data"),
@@ -768,8 +763,7 @@ def register_callbacks(app):
 
     # ─────────────────────────────────────────────────────
     # CALLBACK 5 — Export PDF
-    # ⚠️ year et bank utilisent State (pas Input) pour que le callback
-    # ne se déclenche QUE sur le clic bouton, pas à chaque changement de filtre.
+    # ⚠️ State pour year et bank : déclenché uniquement sur clic bouton
     # ─────────────────────────────────────────────────────
     @app.callback(
         Output("download-pdf","data"),
@@ -779,23 +773,15 @@ def register_callbacks(app):
         prevent_initial_call=True
     )
     def download_pdf(n, year, bank):
-        """
-        Génère un rapport PDF avec :
-        - En-tête titre + filtres appliqués
-        - 4 cartes KPI (bilan, résultat, fonds propres, PNB)
-        - Tableau détaillé des établissements (bilan, résultat, ROA...)
-        - Analyse automatique (banque dominante, plus rentable, source BCEAO)
-        """
+        """Génère un rapport PDF personnalisé selon les filtres actifs."""
         from reportlab.pdfgen import canvas
         from reportlab.lib.pagesizes import letter
         import io
 
-        # Chargement et filtrage
         df = get_data()
         dy = df[df["ANNEE"] == year].copy() if year else df.copy()
         if bank: dy = dy[dy["Sigle"] == bank].copy()
 
-        # Totaux KPI
         bt = dy["BILAN"].sum(); rt = dy["RESULTAT.NET"].sum()
         ft = dy["FONDS.PROPRE"].sum(); pt = dy["PRODUIT.NET.BANCAIRE"].sum()
 
@@ -803,28 +789,19 @@ def register_callbacks(app):
         c    = canvas.Canvas(buf, pagesize=letter)
         W, H = letter
 
-        # Fond sombre
         c.setFillColorRGB(0.031,0.043,0.071); c.rect(0,0,W,H,fill=1,stroke=0)
-
-        # Titre
         c.setFillColorRGB(0.910,0.788,0.408); c.setFont("Helvetica-Bold",20)
         c.drawCentredString(W/2,H-60,"Rapport Bancaire - Sénégal")
-
-        # Sous-titre (filtres)
         c.setFillColorRGB(0.545,0.502,0.439); c.setFont("Helvetica",11)
         p   = f"Année : {int(year)}" if year else "Toutes années"
         bt_ = f"Banque : {bank}" if bank else "Toutes banques"
         c.drawCentredString(W/2,H-82,f"{p}   |   {bt_}")
-
-        # Ligne dorée
         c.setStrokeColorRGB(0.910,0.788,0.408); c.setLineWidth(1)
         c.line(60,H-95,W-60,H-95)
 
-        # Cartes KPI (2×2)
         kpis = [("Bilan Total",fmt(bt)),("Résultat Net",fmt(rt)),
                 ("Fonds Propres",fmt(ft)),("PNB",fmt(pt))]
         y0=H-140; cw=(W-120)/2
-
         for i,(lb,vl) in enumerate(kpis):
             col=i%2; row=i//2; x=60+col*(cw+20); yy=y0-row*70
             c.setFillColorRGB(0.051,0.063,0.094)
@@ -836,15 +813,11 @@ def register_callbacks(app):
             c.setFillColorRGB(0.910,0.820,0.408); c.setFont("Helvetica-Bold",13)
             c.drawString(x+12,yy-24,vl)
 
-        # Séparateur
         y2=y0-160; c.setStrokeColorRGB(0.910,0.788,0.408); c.setLineWidth(0.5)
         c.line(60,y2,W-60,y2)
-
-        # Titre tableau
         c.setFillColorRGB(0.910,0.788,0.408); c.setFont("Helvetica-Bold",12)
         c.drawString(60,y2-20,"Détail par Établissement")
 
-        # En-têtes tableau
         hdrs=["Banque","Bilan","Résultat Net","Fonds Propres","ROA"]
         cws=[120,100,100,100,70]; xs=60; yt=y2-45
         c.setFillColorRGB(0.910,0.788,0.408); c.setFont("Helvetica-Bold",9)
@@ -853,14 +826,12 @@ def register_callbacks(app):
         c.setStrokeColorRGB(0.910,0.788,0.408)
         c.line(xs,yt-4,xs+sum(cws),yt-4)
 
-        # Lignes de données (triées par bilan décroissant)
         dy["_ROA"] = safe_div(dy["RESULTAT.NET"], dy["BILAN"])
         ds = dy.sort_values("BILAN",ascending=False)
         c.setFont("Helvetica",8); yr=yt-18
-
         for idx,(_,row) in enumerate(ds.iterrows()):
-            if yr<80: break  # Arrêt si bas de page atteint
-            if idx%2==0:     # Fond alterné pour la lisibilité
+            if yr<80: break
+            if idx%2==0:
                 c.setFillColorRGB(0.063,0.075,0.106)
                 c.rect(xs,yr-4,sum(cws),16,fill=1,stroke=0)
             c.setFillColorRGB(0.910,0.867,0.784)
@@ -870,7 +841,6 @@ def register_callbacks(app):
             for v,cw2 in zip(vals,cws): c.drawString(xc+4,yr,v[:18]); xc+=cw2
             yr-=18
 
-        # Analyse automatique
         ya=max(yr-20,120)
         c.setStrokeColorRGB(0.910,0.788,0.408); c.line(60,ya,W-60,ya)
         if not dy.empty:
@@ -884,9 +854,7 @@ def register_callbacks(app):
                                    "Source           : BCEAO"]):
                 c.drawString(60,ya-36-i*14,lg)
 
-        # Footer
         c.setFillColorRGB(0.231,0.188,0.145); c.setFont("Helvetica",7)
         c.drawCentredString(W/2,30,"Plateforme d'Analyse Sectorielle · Secteur Bancaire Sénégalais · BCEAO")
-
         c.save(); buf.seek(0)
         return dcc.send_bytes(buf.read(), f"rapport_{year or 'all'}_{bank or 'all'}.pdf")
