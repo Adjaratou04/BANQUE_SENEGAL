@@ -22,6 +22,18 @@ server = Flask(__name__, template_folder=template_dir)
 def home():
     return render_template("home.html")
 
+# ── Route de test MongoDB ──────────────────────────────────
+@server.route("/test-mongo")
+def test_mongo():
+    try:
+        from database.mongo_connection import get_database
+        db = get_database()
+        collections = db.list_collection_names()
+        count = db["banque"].count_documents({})
+        return f"Collections: {collections} | Documents: {count}"
+    except Exception as e:
+        return f"ERREUR: {str(e)}"
+
 # ── Dashboard Bancaire ─────────────────────────────────────
 app = Dash(
     __name__,
