@@ -6,7 +6,7 @@ load_dotenv()
 
 def get_database():
     uri = os.getenv("MONGO_URI")
-    db_name = os.getenv("MONGO_DB_NAME", "banques_senegal")
+    db_name = os.getenv("MONGO_DB_NAME", "Baqnues_senegal")
 
     if not uri:
         raise ValueError("MONGO_URI n'est pas définie")
